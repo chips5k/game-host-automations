@@ -1,0 +1,11 @@
+{
+  "name": "game-host-automations-server-manager",
+  "version": "1.0.0",
+  "description": "EC2 and LinuxGSM management Lambda for game host automations",
+  "main": "app.js",
+  "dependencies": {
+    "aws-sdk": "^2.930.0",
+    "axios": "^0.21.1",
+    "strip-color": "^0.1.0"
+  }
+}
