@@ -1,0 +1,9 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "game-host-automations"
+s3_prefix = "game-host-automations"
+region = "ap-southeast-2"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"

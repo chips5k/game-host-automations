@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  game-host-automations
+
+  SAM Template for game-host-automations
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 600
+
+Parameters:
+  SlackBotToken:
+    Type: String
+    NoEcho: true
+  SlackSigningSecret:
+    Type: String
+    NoEcho: true
+  DiscordWebhook:
+    Type: String
+    NoEcho: true
+  SlackWebhook:
+    Type: String
+    NoEcho: true
+  SlackPrivateChannelId:
+    Type: String
+    NoEcho: true
+  SlashCommand:
+    Type: String
+    Default: "/gameserver"
+    Description: "Slash command configured in Slack app"
+  ServerNameTag:
+    Type: String
+    Default: "game-server-dedicated"
+    Description: "EC2 Name tag used to locate dedicated game server instance"
+
+Resources:
+  ApiDeployment:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dflt
+
+  ServerManagerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: server-manager/
+      Handler: app.handler
+      Runtime: nodejs14.x
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ec2:startInstances
+                - ec2:describeInstances
+                - ec2:describeInstanceStatus
+                - ec2:stopInstances
+                - ssm:GetCommandInvocation
+                - ssm:sendCommand
+              Resource: "*"
+      Environment:
+        Variables:
+          DISCORD_WEBHOOK: !Ref DiscordWebhook
+          SLACK_WEBHOOK: !Ref SlackWebhook
+          SLASH_COMMAND: !Ref SlashCommand
+          SERVER_NAME_TAG: !Ref ServerNameTag
+
+  SlackResponderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: slack-responder/
+      Handler: app.handler
+      Runtime: nodejs14.x
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - lambda:invokeFunction
+                - lambda:InvokeAsync
+              Resource: !GetAtt ServerManagerFunction.Arn
+      Events:
+        SlackResponderApiEvent:
+          Type: Api
+          Properties:
+            Path: /gameserver
+            Method: post
+            RestApiId: !Ref ApiDeployment
+      Environment:
+        Variables:
+          SLACK_BOT_TOKEN: !Ref SlackBotToken
+          SLACK_SIGNING_SECRET: !Ref SlackSigningSecret
+          SERVER_MANAGER_LAMBDA: !Ref ServerManagerFunction
+          SLACK_PRIVATE_CHANNEL_ID: !Ref SlackPrivateChannelId
+          SLASH_COMMAND: !Ref SlashCommand
+
+Outputs:
+  SlackResponderEndpoint:
+    Description: "API Gateway endpoint URL for dflt stage for Server Manager function"
+    Value: !Sub "https://${ApiDeployment}.execute-api.${AWS::Region}.amazonaws.com/dflt/gameserver/"
