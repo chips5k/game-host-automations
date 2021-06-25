@@ -1,0 +1,10 @@
+{
+  "name": "game-host-automations-slack-responder",
+  "version": "1.0.0",
+  "description": "Slack slash command responder Lambda for game host automations",
+  "main": "app.js",
+  "dependencies": {
+    "@slack/bolt": "^3.4.0",
+    "aws-sdk": "^2.930.0"
+  }
+}
